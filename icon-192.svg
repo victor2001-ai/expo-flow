@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="40" fill="#1d4ed8"/>
+  <!-- Top node -->
+  <rect x="66" y="18" width="60" height="28" rx="14" fill="#dc2626"/>
+  <!-- Arrow down -->
+  <line x1="96" y1="46" x2="96" y2="66" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  <polygon points="96,72 90,62 102,62" fill="white"/>
+  <!-- Middle node -->
+  <rect x="56" y="72" width="80" height="28" rx="6" fill="white" opacity="0.9"/>
+  <!-- Arrow down -->
+  <line x1="96" y1="100" x2="96" y2="120" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  <polygon points="96,126 90,116 102,116" fill="white"/>
+  <!-- Middle node 2 -->
+  <rect x="56" y="126" width="80" height="28" rx="6" fill="#0f766e"/>
+  <!-- Arrow down -->
+  <line x1="96" y1="154" x2="96" y2="158" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  <polygon points="96,164 90,154 102,154" fill="white"/>
+  <!-- Bottom node -->
+  <rect x="66" y="158" width="60" height="22" rx="11" fill="#16a34a"/>
+</svg>
