@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Expo Flow</title>
+<meta name="description" content="Diagrama de flujo interactivo para exposiciones y discursos">
+<meta name="theme-color" content="#1d4ed8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Expo Flow">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.svg">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0f2f5;--surface:#fff;--border:#e2e8f0;
+  --text:#0f172a;--muted:#64748b;--hint:#94a3b8;
+  --blue:#1d4ed8;--blue-dark:#1e3a8a;--blue-light:#dbeafe;
+  --teal:#0f766e;--red:#dc2626;--green:#16a34a;--accent:#3b82f6;
+  --topbar-h:52px;--bottomnav-h:64px;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text)}
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* TOPBAR */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 1.25rem;height:var(--topbar-h);display:flex;align-items:center;gap:.75rem;flex-shrink:0;z-index:20}
+.topbar h1{font-size:14px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar-btn{padding:5px 12px;font-size:12px;font-weight:500;border:1px solid var(--border);border-radius:20px;background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;transition:background .15s;flex-shrink:0}
+.topbar-btn:hover{background:var(--bg);color:var(--text)}
+
+/* MAIN */
+.main{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:300px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:width .25s ease}
+.sidebar.collapsed{width:0}
+.sidebar-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.stab{flex:1;padding:10px 4px;font-size:12px;font-weight:500;text-align:center;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:color .15s;white-space:nowrap;user-select:none}
+.stab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab-panel{display:none;flex:1;overflow-y:auto;flex-direction:column;-webkit-overflow-scrolling:touch}
+.tab-panel.active{display:flex}
+
+/* CANVAS */
+.canvas-wrap{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;display:flex;align-items:flex-start;justify-content:center;padding:1.5rem}
+#flow-container{width:100%;max-width:680px}
+svg#flow{width:100%;display:block}
+
+/* DETAIL */
+.detail-wrap{padding:1.25rem;flex:1}
+.detail-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:180px;color:var(--hint);text-align:center;gap:8px}
+.detail-empty .icon{font-size:28px}
+.detail-empty p{font-size:13px}
+.dp-tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 10px;border-radius:20px;background:var(--blue-light);color:var(--blue-dark);margin-bottom:10px}
+.dp-title{font-size:16px;font-weight:700;margin-bottom:6px;line-height:1.3}
+.dp-body{font-size:13px;color:var(--muted);line-height:1.65;margin-bottom:12px}
+.dp-points{list-style:none;display:flex;flex-direction:column;gap:6px}
+.dp-points li{font-size:13px;color:#334155;padding:8px 10px 8px 14px;background:var(--bg);border-radius:6px;position:relative;line-height:1.4}
+.dp-points li::before{content:"→";position:absolute;left:4px;top:9px;color:var(--hint);font-size:10px}
+
+/* FORMS */
+.bosquejo-wrap{padding:1rem;display:flex;flex-direction:column;gap:10px;flex:1}
+.bosquejo-wrap label{font-size:12px;font-weight:600;color:var(--muted)}
+.bosquejo-wrap textarea{flex:1;min-height:130px;resize:none;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:12px;line-height:1.6;font-family:inherit;color:var(--text);background:var(--bg);outline:none}
+.bosquejo-wrap textarea:focus{border-color:var(--accent);background:#fff}
+.bosquejo-wrap .title-field{padding:7px 10px;font-size:13px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);outline:none;font-family:inherit;width:100%}
+.bosquejo-wrap .title-field:focus{border-color:var(--accent);background:#fff}
+.bosquejo-wrap .gen-btn{padding:9px;font-size:13px;font-weight:600;background:var(--blue);color:#fff;border:none;border-radius:8px;cursor:pointer}
+.import-section{border-top:1px solid var(--border);padding:1rem;display:flex;flex-direction:column;gap:8px}
+.import-section label{font-size:12px;font-weight:600;color:var(--muted)}
+.import-section textarea{min-height:70px;resize:none;border:1px solid var(--border);border-radius:8px;padding:8px;font-size:11px;font-family:monospace;color:var(--text);background:var(--bg);outline:none}
+.import-section textarea:focus{border-color:var(--accent);background:#fff}
+.import-btn{padding:7px;font-size:12px;font-weight:600;background:var(--teal);color:#fff;border:none;border-radius:8px;cursor:pointer}
+.import-hint{font-size:11px;color:var(--hint);line-height:1.5}
+.historial-wrap{padding:1rem;display:flex;flex-direction:column;gap:8px;flex:1}
+.section-label{font-size:12px;font-weight:600;color:var(--muted)}
+.hist-list{display:flex;flex-direction:column;gap:6px}
+.hist-item{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;transition:border-color .15s;display:flex;align-items:center;gap:8px}
+.hist-item:hover{border-color:var(--accent)}
+.hist-item.loaded{border-color:var(--blue);background:var(--blue-light)}
+.hist-info{flex:1;min-width:0}
+.hist-title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-date{font-size:11px;color:var(--hint);margin-top:2px}
+.hist-del{flex-shrink:0;background:transparent;border:none;color:var(--hint);cursor:pointer;font-size:18px;line-height:1;padding:2px 4px}
+.hist-del:hover{color:var(--red)}
+.hist-empty{font-size:13px;color:var(--hint);text-align:center;padding:2rem 0}
+
+/* MOBILE */
+.bottom-nav{display:none}
+.sheet-backdrop{display:none}
+.sheet{display:none}
+
+@media(max-width:679px){
+  .app{height:100dvh}
+  .topbar{padding:0 1rem}
+  .topbar h1{font-size:13px}
+  .topbar-btn.desktop-only{display:none}
+  .main{flex-direction:column}
+  .sidebar{display:none!important}
+  .canvas-wrap{flex:1;padding:.75rem .5rem;padding-bottom:calc(var(--bottomnav-h) + .5rem)}
+  #flow-container{max-width:100%}
+
+  .bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;height:var(--bottomnav-h);background:var(--surface);border-top:1px solid var(--border);z-index:30;padding-bottom:env(safe-area-inset-bottom)}
+  .bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:none;color:var(--hint);cursor:pointer;font-size:10px;font-weight:500;transition:color .15s;padding:8px 4px;-webkit-tap-highlight-color:transparent}
+  .bnav-btn.active{color:var(--blue)}
+  .bnav-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+  .sheet-backdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:40;opacity:0;pointer-events:none;transition:opacity .25s}
+  .sheet-backdrop.open{opacity:1;pointer-events:auto}
+  .sheet{display:flex;flex-direction:column;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-radius:20px 20px 0 0;z-index:50;max-height:80dvh;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,0,.67,0);padding-bottom:env(safe-area-inset-bottom)}
+  .sheet.open{transform:translateY(0);transition-timing-function:cubic-bezier(.33,1,.68,1)}
+  .sheet-handle{width:36px;height:4px;border-radius:2px;background:var(--border);margin:10px auto 6px;flex-shrink:0}
+  .sheet-header{display:flex;align-items:center;justify-content:space-between;padding:4px 1rem 10px;flex-shrink:0;border-bottom:1px solid var(--border)}
+  .sheet-title{font-size:13px;font-weight:600;color:var(--muted)}
+  .sheet-close{background:none;border:none;font-size:22px;color:var(--hint);cursor:pointer}
+  .sheet-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+
+  .fullpage{position:fixed;inset:0;background:var(--surface);z-index:60;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .28s cubic-bezier(.32,0,.67,0)}
+  .fullpage.open{transform:translateX(0);transition-timing-function:cubic-bezier(.33,1,.68,1)}
+  .fullpage-header{display:flex;align-items:center;gap:.75rem;padding:.85rem 1rem;border-bottom:1px solid var(--border);flex-shrink:0}
+  .fullpage-back{background:none;border:none;cursor:pointer;color:var(--blue);font-size:13px;font-weight:600;display:flex;align-items:center;gap:4px;padding:0}
+  .fullpage-back svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .fullpage-title{font-size:15px;font-weight:700}
+  .fullpage-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:1rem;display:flex;flex-direction:column;gap:10px}
+  .field-label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+  .field-input{width:100%;padding:9px 10px;font-size:14px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);outline:none;font-family:inherit}
+  .field-input:focus{border-color:var(--accent);background:#fff}
+  .field-textarea{width:100%;resize:none;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:13px;line-height:1.6;font-family:inherit;color:var(--text);background:var(--bg);outline:none;min-height:130px}
+  .field-textarea:focus{border-color:var(--accent);background:#fff}
+  .field-textarea.mono{font-family:monospace;font-size:11px;min-height:80px}
+  .btn{width:100%;padding:11px;font-size:14px;font-weight:600;border:none;border-radius:10px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .btn-primary{background:var(--blue);color:#fff}
+  .btn-teal{background:var(--teal);color:#fff}
+  .divider{border:none;border-top:1px solid var(--border);margin:.25rem 0}
+  .hint-text{font-size:11px;color:var(--hint);line-height:1.5}
+}
+
+/* TOAST */
+.toast{position:fixed;bottom:5rem;left:50%;transform:translateX(-50%) translateY(20px);background:#1e293b;color:#fff;font-size:13px;padding:10px 18px;border-radius:20px;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:999;white-space:nowrap;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* SVG NODE STYLES */
+.node-g{cursor:pointer}
+.node-g rect{transition:filter .12s}
+.node-g:hover rect{filter:brightness(.88)}
+.node-g.active rect{stroke-width:2.5!important;filter:brightness(.82)}
+.pill-start{fill:#dc2626;stroke:#991b1b;stroke-width:1}
+.pill-end{fill:#16a34a;stroke:#166534;stroke-width:1}
+.pill-text{font-size:12px;font-weight:600;fill:#fff;font-family:-apple-system,sans-serif}
+.box-0{fill:#1d4ed8;stroke:#1e3a8a;stroke-width:.5}
+.box-1{fill:#0f766e;stroke:#134e4a;stroke-width:.5}
+.box-2{fill:#6d28d9;stroke:#4c1d95;stroke-width:.5}
+.box-3{fill:#b45309;stroke:#92400e;stroke-width:.5}
+.box-4{fill:#0e7490;stroke:#155e75;stroke-width:.5}
+.box-txt{font-size:11px;font-weight:500;fill:#fff;font-family:-apple-system,sans-serif}
+.arr-line{stroke:#94a3b8;stroke-width:1.5;fill:none}
+.conn-line{stroke:#cbd5e1;stroke-width:1.5;fill:none;stroke-dasharray:none}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <h1 id="expo-title">Expo Flow</h1>
+    <button class="topbar-btn desktop-only" onclick="toggleSidebar()">☰ Panel</button>
+  </div>
+  <div class="main">
+
+    <!-- DESKTOP SIDEBAR -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-tabs">
+        <div class="stab active" onclick="switchTab('detail')">Detalle</div>
+        <div class="stab" onclick="switchTab('bosquejo')">Bosquejo</div>
+        <div class="stab" onclick="switchTab('historial')">Historial</div>
+      </div>
+      <div class="tab-panel active" id="tab-detail">
+        <div class="detail-wrap">
+          <div class="detail-empty" id="detail-empty-desk"><div class="icon">👆</div><p>Toca cualquier nodo del diagrama</p></div>
+          <div id="detail-content-desk" style="display:none">
+            <span class="dp-tag" id="dp-tag-desk"></span>
+            <div class="dp-title" id="dp-title-desk"></div>
+            <div class="dp-body" id="dp-body-desk"></div>
+            <ul class="dp-points" id="dp-points-desk"></ul>
+          </div>
+        </div>
+      </div>
+      <div class="tab-panel" id="tab-bosquejo">
+        <div class="bosquejo-wrap">
+          <label>Título</label>
+          <input class="title-field" type="text" id="desk-title" placeholder="Título de la exposición..."/>
+          <label>Bosquejo</label>
+          <textarea id="desk-bosquejo" placeholder="Pega tu bosquejo aquí..."></textarea>
+          <button class="gen-btn" onclick="prepararParaClaude('desk')">Copiar prompt para Claude ✨</button>
+        </div>
+        <div class="import-section">
+          <label>Pega el JSON de Claude</label>
+          <p class="import-hint">Copia el JSON que Claude te devuelva y pégalo aquí.</p>
+          <textarea id="desk-json" placeholder='{"title":"...","nodes":[...]}'></textarea>
+          <button class="import-btn" onclick="importarJSON('desk')">✓ Cargar diagrama</button>
+        </div>
+      </div>
+      <div class="tab-panel" id="tab-historial">
+        <div class="historial-wrap">
+          <div class="section-label">Bosquejos guardados</div>
+          <div class="hist-list" id="hist-list-desk"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CANVAS -->
+    <div class="canvas-wrap">
+      <div id="flow-container"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MOBILE -->
+<nav class="bottom-nav">
+  <button class="bnav-btn active" id="bnav-diagrama" onclick="mobileNav('diagrama')">
+    <svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="4" rx="1"/><line x1="12" y1="6" x2="12" y2="10"/><rect x="4" y="10" width="7" height="4" rx="1"/><rect x="13" y="10" width="7" height="4" rx="1"/><line x1="7" y1="14" x2="7" y2="18"/><line x1="17" y1="14" x2="17" y2="18"/><rect x="4" y="18" width="7" height="4" rx="1"/><rect x="13" y="18" width="7" height="4" rx="1"/></svg>
+    Diagrama
+  </button>
+  <button class="bnav-btn" id="bnav-bosquejo" onclick="mobileNav('bosquejo')">
+    <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+    Bosquejo
+  </button>
+  <button class="bnav-btn" id="bnav-historial" onclick="mobileNav('historial')">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    Historial
+  </button>
+</nav>
+
+<div class="sheet-backdrop" id="sheet-backdrop" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <span class="sheet-title" id="sheet-label">Detalle</span>
+    <button class="sheet-close" onclick="closeSheet()">×</button>
+  </div>
+  <div class="sheet-body">
+    <div class="detail-wrap">
+      <span class="dp-tag" id="dp-tag-mob"></span>
+      <div class="dp-title" id="dp-title-mob"></div>
+      <div class="dp-body" id="dp-body-mob"></div>
+      <ul class="dp-points" id="dp-points-mob"></ul>
+    </div>
+  </div>
+</div>
+
+<div class="fullpage" id="page-bosquejo">
+  <div class="fullpage-header">
+    <button class="fullpage-back" onclick="closePage('bosquejo')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Volver</button>
+    <span class="fullpage-title">Nuevo bosquejo</span>
+  </div>
+  <div class="fullpage-body">
+    <label class="field-label">Título</label>
+    <input class="field-input" type="text" id="mob-title" placeholder="Título de la exposición..."/>
+    <label class="field-label">Bosquejo</label>
+    <textarea class="field-textarea" id="mob-bosquejo" placeholder="Pega tu bosquejo aquí, tan desordenado como quieras..."></textarea>
+    <button class="btn btn-primary" onclick="prepararParaClaude('mob')">1. Copiar prompt para Claude ✨</button>
+    <hr class="divider"/>
+    <label class="field-label">Pega el JSON que Claude te dio</label>
+    <p class="hint-text" style="margin-bottom:4px">Copia el bloque JSON completo y pégalo aquí.</p>
+    <textarea class="field-textarea mono" id="mob-json" placeholder='{"title":"...","nodes":[]}'></textarea>
+    <button class="btn btn-teal" onclick="importarJSON('mob')">2. Cargar diagrama ✓</button>
+  </div>
+</div>
+
+<div class="fullpage" id="page-historial">
+  <div class="fullpage-header">
+    <button class="fullpage-back" onclick="closePage('historial')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Volver</button>
+    <span class="fullpage-title">Historial</span>
+  </div>
+  <div class="fullpage-body">
+    <div class="hist-list" id="hist-list-mob"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   DATA MODEL
+   Cada nodo:
+   {
+     id: string,
+     label: string,          ← etiqueta corta para el nodo
+     tag: string,            ← categoría mostrada en detalle
+     title: string,
+     body: string,
+     points: string[],
+     children: node[]        ← sub-nodos (opcional)
+   }
+
+   El JSON que genera Claude tiene esta forma:
+   {
+     "title": "...",
+     "layout": "linear" | "fan" | "mixed",
+     "nodes": [ ...nodos en orden, con children si aplica ]
+   }
+
+   layout:
+   - "linear"  → todos los nodos en columna, uno debajo del otro
+   - "fan"     → hay nodos con children que se despliegan en paralelo
+   - "mixed"   → mezcla: algunos lineales, uno con children paralelos
+══════════════════════════════════════════════════════════ */
+
+const STORAGE_KEY = 'expo_flow_v5';
+let currentData = null;
+let nodeMap = {};
+let currentHistId = null;
+let sidebarOpen = true;
+const isMobile = () => window.innerWidth < 680;
+
+/* DEMO */
+const DEMO = {
+  title: "No respetaron el templo de Jehová",
+  layout: "mixed",
+  nodes: [
+    {
+      id:"intro", label:"Dos personalidades", tag:"Introducción",
+      title:"Dos personalidades, una persona",
+      body:"Hay personas que se comportan diferente según dónde están.",
+      points:["Amables en un lugar, agresivos en otro","Los judíos: conducta doble","¿Eres la misma persona en todos lados?"]
+    },
+    {
+      id:"central", label:"Idea central", tag:"Idea principal",
+      title:"La adoración verdadera va más allá del templo",
+      body:"Jehová no juzga solo por asistir — juzga cómo vivimos cada día.",
+      points:["Jeremías 7: el pueblo seguía asistiendo","Pero su conducta era otra fuera del templo","Adoración = actitud diaria, no solo presencia"],
+      children: [
+        {
+          id:"p1", label:"El templo no protege", tag:"Lección 1",
+          title:"El templo por sí solo no los protegía",
+          body:"Creían que con asistir era suficiente. Jehová les mostró que no.",
+          points:["Jeremías 7:4, 8-10","Robaban, mentían, adoraban ídolos","Adoración verdadera incluye cómo vivimos"]
+        },
+        {
+          id:"p2", label:"Nombre manchado", tag:"Lección 2",
+          title:"Su conducta manchaba el nombre de Jehová",
+          body:"El problema no era solo pecar, sino hacerlo llevando Su nombre.",
+          points:["Jeremías 7:11","El templo llevaba el nombre de Dios","La gente te observa antes de leer la Biblia"]
+        },
+        {
+          id:"p3", label:"Ejemplo de Siló", tag:"Lección 3",
+          title:"Jehová usó Siló como advertencia",
+          body:"Siló fue abandonada. Jerusalén podía correr la misma suerte.",
+          points:["Jeremías 7:12-14","Siló: sagrada pero abandonada por infidelidad","Jehová no protege por tradición sino fidelidad"]
+        }
+      ]
+    },
+    {
+      id:"conclusion", label:"Desafío final", tag:"Conclusión",
+      title:"¿Honra a Jehová mi conducta en todo momento?",
+      body:"No separemos adoración de conducta. La consistencia es la verdadera prueba.",
+      points:["En el trabajo, la escuela, las redes","Cuando nadie de la congregación me observa","Conducta consistente = honrar a Jehová mismo"]
+    }
+  ]
+};
+
+/* ══════════════════════════════════════════════════════════
+   RENDER ENGINE — adapta el layout según data.layout
+══════════════════════════════════════════════════════════ */
+function buildNodeMap(nodes) {
+  nodeMap = {};
+  const walk = (arr) => arr.forEach(n => {
+    nodeMap[n.id] = n;
+    if (n.children) walk(n.children);
+  });
+  walk(nodes);
+}
+
+function renderDiagram(data) {
+  currentData = data;
+  buildNodeMap(data.nodes);
+  document.getElementById('expo-title').textContent = data.title;
+
+  const mobile = isMobile();
+  const NS = 'http://www.w3.org/2000/svg';
+  const NW = mobile ? 120 : 160;   // node width
+  const NH = 44;                    // node height
+  const HGAP = mobile ? 12 : 20;   // horizontal gap
+  const VGAP = 68;                  // vertical gap between rows
+
+  // Build layout plan
+  const plan = buildLayoutPlan(data.nodes, NW, NH, HGAP, VGAP);
+  const totalW = plan.width;
+  const totalH = plan.height;
+
+  const svg = document.createElementNS(NS, 'svg');
+  svg.id = 'flow';
+  svg.setAttribute('viewBox', `0 0 ${totalW} ${totalH}`);
+
+  const defs = document.createElementNS(NS, 'defs');
+  defs.innerHTML = `<marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>`;
+  svg.appendChild(defs);
+
+  // Draw connections first (behind nodes)
+  plan.connections.forEach(c => {
+    const el = document.createElementNS(NS, 'line');
+    el.setAttribute('x1', c.x1); el.setAttribute('y1', c.y1);
+    el.setAttribute('x2', c.x2); el.setAttribute('y2', c.y2);
+    el.setAttribute('class', c.cls || 'arr-line');
+    if (c.arrow) el.setAttribute('marker-end', 'url(#arr)');
+    svg.appendChild(el);
+  });
+
+  // Draw nodes
+  plan.rects.forEach(r => {
+    const g = document.createElementNS(NS, 'g');
+    g.setAttribute('class', 'node-g');
+    g.setAttribute('id', 'n-' + r.id);
+    g.setAttribute('onclick', `show('${r.id}')`);
+
+    const rect = document.createElementNS(NS, 'rect');
+    rect.setAttribute('x', r.x); rect.setAttribute('y', r.y);
+    rect.setAttribute('width', r.w); rect.setAttribute('height', r.h);
+    rect.setAttribute('rx', r.rx); rect.setAttribute('class', r.cls);
+    g.appendChild(rect);
+
+    const txt = document.createElementNS(NS, 'text');
+    txt.setAttribute('x', r.x + r.w/2); txt.setAttribute('y', r.y + r.h/2);
+    txt.setAttribute('text-anchor', 'middle');
+    txt.setAttribute('dominant-baseline', 'central');
+    txt.setAttribute('class', r.textCls);
+
+    const label = r.label || '';
+    const maxCh = Math.floor(r.w / (mobile ? 6 : 7));
+    if (label.length > maxCh) {
+      const words = label.split(' '), half = Math.ceil(words.length / 2);
+      const ts1 = document.createElementNS(NS, 'tspan');
+      ts1.setAttribute('x', r.x + r.w/2); ts1.setAttribute('dy', '-0.55em');
+      ts1.textContent = words.slice(0, half).join(' ');
+      const ts2 = document.createElementNS(NS, 'tspan');
+      ts2.setAttribute('x', r.x + r.w/2); ts2.setAttribute('dy', '1.15em');
+      ts2.textContent = words.slice(half).join(' ');
+      txt.appendChild(ts1); txt.appendChild(ts2);
+    } else { txt.textContent = label; }
+
+    g.appendChild(txt);
+    svg.appendChild(g);
+  });
+
+  const container = document.getElementById('flow-container');
+  container.innerHTML = '';
+  container.appendChild(svg);
+}
+
+/* ─────────────────────────────────────────────────────
+   LAYOUT PLAN BUILDER
+   Returns { width, height, rects[], connections[] }
+───────────────────────────────────────────────────── */
+function buildLayoutPlan(nodes, NW, NH, HGAP, VGAP) {
+  const PAD = 16;
+  const rects = [];
+  const connections = [];
+  let y = PAD;
+
+  // Helper: add a simple node rect
+  const addNode = (id, x, w, yPos, special) => {
+    const isStart = special === 'start';
+    const isEnd = special === 'end';
+    const isSec = special === 'section';
+    const colorIdx = rects.filter(r => !r.special || r.special === 'child').length % 5;
+    const cls = isStart ? 'pill-start' : isEnd ? 'pill-end' : isSec ? 'box-1' : `box-${colorIdx}`;
+    const textCls = (isStart || isEnd) ? 'pill-text' : 'box-txt';
+    const rx = (isStart || isEnd) ? 22 : 7;
+    const node = nodeMap[id] || {};
+    rects.push({ id, x, y: yPos, w, h: NH, rx, cls, textCls, label: node.label || id, special: special || 'normal' });
+    return { cx: x + w/2, top: yPos, bottom: yPos + NH };
+  };
+
+  // Measure: how wide does a node row need to be if it has N parallel children?
+  const childrenWidth = (n, NW, HGAP) => {
+    const count = n.children ? n.children.length : 0;
+    return count > 0 ? count * NW + (count-1) * HGAP : NW;
+  };
+
+  // First pass: figure out total width
+  let maxRowW = 0;
+  nodes.forEach(n => {
+    const w = childrenWidth(n, NW, HGAP) + PAD * 2;
+    if (w > maxRowW) maxRowW = w;
+  });
+  const totalW = Math.max(maxRowW, NW + PAD * 2);
+  const cx = totalW / 2;
+
+  let prevBottomCx = null; // {cx, y}
+
+  nodes.forEach((node, ni) => {
+    const isFirst = ni === 0;
+    const isLast = ni === nodes.length - 1;
+    const hasChildren = node.children && node.children.length > 0;
+
+    if (hasChildren) {
+      // ── FAN NODE: parent + children in parallel ──
+      const N = node.children.length;
+      const fanW = N * NW + (N-1) * HGAP;
+      const fanX = cx - fanW/2;
+
+      // Parent node (centered, slightly wider)
+      const parentW = Math.min(NW * 1.3, fanW);
+      const parentX = cx - parentW/2;
+      const parentPos = addNode(node.id, parentX, parentW, y, 'section');
+
+      // Connect from previous
+      if (prevBottomCx) {
+        connections.push({x1: prevBottomCx.cx, y1: prevBottomCx.y, x2: cx, y2: y, arrow: true});
+      }
+      prevBottomCx = null;
+
+      // Horizontal bar
+      const barY = y + NH + VGAP * 0.4;
+      connections.push({x1: cx, y1: y + NH, x2: cx, y2: barY, cls:'arr-line', arrow: false});
+
+      if (N > 1) {
+        connections.push({x1: fanX + NW/2, y1: barY, x2: fanX + fanW - NW/2, y2: barY, cls:'conn-line', arrow: false});
+      }
+
+      const childY = barY + VGAP * 0.45;
+      const childCenters = [];
+
+      node.children.forEach((ch, ci) => {
+        const cx_ch = fanX + ci * (NW + HGAP) + NW/2;
+        childCenters.push(cx_ch);
+        connections.push({x1: cx_ch, y1: barY, x2: cx_ch, y2: childY, cls:'arr-line', arrow: true});
+        const colorIdx = ci % 5;
+        const node_data = nodeMap[ch.id] || {};
+        rects.push({ id: ch.id, x: fanX + ci*(NW+HGAP), y: childY, w: NW, h: NH, rx: 7, cls: `box-${colorIdx}`, textCls: 'box-txt', label: node_data.label || ch.id, special: 'child' });
+      });
+
+      // Converge lines down
+      const convergeY = childY + NH + VGAP * 0.4;
+      childCenters.forEach(ccx => {
+        connections.push({x1: ccx, y1: childY + NH, x2: ccx, y2: convergeY, cls:'conn-line', arrow: false});
+      });
+      if (N > 1) {
+        connections.push({x1: childCenters[0], y1: convergeY, x2: childCenters[N-1], y2: convergeY, cls:'conn-line', arrow: false});
+      }
+
+      y = convergeY;
+      prevBottomCx = {cx, y};
+      y += VGAP;
+
+    } else {
+      // ── LINEAR NODE ──
+      const special = isFirst ? 'start' : isLast ? 'end' : null;
+      if (prevBottomCx) {
+        connections.push({x1: prevBottomCx.cx, y1: prevBottomCx.y, x2: cx, y2: y, arrow: true});
+      }
+      addNode(node.id, cx - NW/2, NW, y, special);
+      prevBottomCx = {cx, y: y + NH};
+      y += NH + VGAP;
+    }
+  });
+
+  return { width: totalW, height: y, rects, connections };
+}
+
+/* ══════════════════════════════════════════════════════════
+   SHOW NODE DETAIL
+══════════════════════════════════════════════════════════ */
+function fillDetail(d, suffix) {
+  document.getElementById('dp-tag-'+suffix).textContent = d.tag || '';
+  document.getElementById('dp-title-'+suffix).textContent = d.title || '';
+  document.getElementById('dp-body-'+suffix).textContent = d.body || '';
+  const ul = document.getElementById('dp-points-'+suffix); ul.innerHTML = '';
+  (d.points||[]).forEach(p => { const li=document.createElement('li'); li.textContent=p; ul.appendChild(li); });
+}
+
+function show(id) {
+  const d = nodeMap[id]; if (!d) return;
+  document.querySelectorAll('.node-g').forEach(n => n.classList.remove('active'));
+  document.getElementById('n-'+id)?.classList.add('active');
+  if (isMobile()) {
+    document.getElementById('sheet-label').textContent = d.tag || d.label;
+    fillDetail(d, 'mob');
+    document.getElementById('sheet-backdrop').classList.add('open');
+    document.getElementById('sheet').classList.add('open');
+  } else {
+    document.getElementById('detail-empty-desk').style.display = 'none';
+    document.getElementById('detail-content-desk').style.display = 'block';
+    fillDetail(d, 'desk');
+    if (!sidebarOpen) toggleSidebar();
+    switchTab('detail');
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   PROMPT GENERATOR — le pide a Claude que decida la estructura
+══════════════════════════════════════════════════════════ */
+function prepararParaClaude(ctx) {
+  const bosquejo = document.getElementById(ctx==='mob'?'mob-bosquejo':'desk-bosquejo').value.trim();
+  const titulo   = document.getElementById(ctx==='mob'?'mob-title':'desk-title').value.trim();
+  if (!bosquejo) { toast('⚠️ Pega tu bosquejo primero.'); return; }
+
+  const prompt = `Eres un asistente que organiza bosquejos en JSON para un diagrama de flujo visual interactivo.
+
+TU ÚNICA TAREA ES ORGANIZAR — NO REESCRIBIR.
+No resumas, no simplifiques, no mejores el lenguaje. Toma las frases, preguntas e ideas exactas del bosquejo y colócalas donde corresponden. El expositor necesita ver SUS PROPIAS PALABRAS en el diagrama para reconocerlas al instante mientras habla.
+
+Devuelve SOLO el JSON puro. Sin explicación, sin markdown, sin bloques de código. Empieza con { y termina con }.
+
+ESTRUCTURA DEL JSON:
+{
+  "title": "Título de la exposición",
+  "layout": "linear" | "fan" | "mixed",
+  "nodes": [ ...ver abajo... ]
+}
+
+ELIGE EL LAYOUT SEGÚN LA ESTRUCTURA DEL BOSQUEJO:
+- "linear": fluye de un punto al siguiente (historia, proceso, visita con pasos secuenciales)
+- "fan": una sección agrupa varios puntos paralelos (discurso con N lecciones o argumentos)
+- "mixed": mezcla de lineal y paralelo
+
+ESTRUCTURA DE CADA NODO:
+{
+  "id": "único (intro, p1, p2... conclusion)",
+  "label": "Título de la sección tal como aparece en el bosquejo (máx 5 palabras)",
+  "tag": "Categoría (ej: Apertura, Punto 1, Cierre)",
+  "title": "El título o pregunta principal de esa sección, con las palabras exactas del bosquejo",
+  "body": "La idea central de esa sección con las palabras exactas del bosquejo (1-2 frases)",
+  "points": [
+    "Pregunta o frase EXACTA del bosquejo",
+    "Otra pregunta o frase EXACTA del bosquejo",
+    "Texto bíblico o idea EXACTA del bosquejo"
+  ],
+  "children": [ ...si esa sección tiene sub-puntos paralelos... ]
+}
+
+REGLAS CRÍTICAS:
+- COPIA las frases del bosquejo tal como están — no las cambies, no las mejores
+- Los "points" son las preguntas, frases clave o textos bíblicos exactos del bosquejo
+- El "body" usa las palabras originales del bosquejo, no sinónimos ni resúmenes
+- Solo UN nodo puede tener "children"
+- Entre 3 y 8 nodos en total
+- Si el bosquejo tiene preguntas, ponlas como preguntas en los points
+- Si el bosquejo tiene textos bíblicos, inclúyelos exactamente (ej: "Filipenses 4:6,7")
+${titulo ? '- Título: ' + titulo : ''}
+
+BOSQUEJO:
+${bosquejo}`;
+
+  navigator.clipboard.writeText(prompt).then(() => {
+    toast('✓ Prompt copiado — pégalo en Claude');
+  }).catch(() => {
+    const ta=document.createElement('textarea'); ta.value=prompt;
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    toast('✓ Prompt copiado — pégalo en Claude');
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   IMPORT JSON
+══════════════════════════════════════════════════════════ */
+function importarJSON(ctx) {
+  let raw = document.getElementById(ctx==='mob'?'mob-json':'desk-json').value.trim();
+  if (!raw) { toast('⚠️ Pega el JSON de Claude primero.'); return; }
+  raw = raw.replace(/^```[a-z]*\n?/gm,'').replace(/```/g,'').trim();
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed.nodes || !Array.isArray(parsed.nodes)) throw new Error('bad');
+    renderDiagram(parsed);
+    document.getElementById(ctx==='mob'?'mob-json':'desk-json').value = '';
+    const entry = {
+      id: Date.now(), title: parsed.title || 'Sin título',
+      date: new Date().toLocaleString('es-DO'),
+      bosquejo: document.getElementById(ctx==='mob'?'mob-bosquejo':'desk-bosquejo').value.trim(),
+      data: parsed
+    };
+    saveHistorial(entry); currentHistId = entry.id;
+    if (ctx==='mob') closePage('bosquejo');
+    else { document.getElementById('detail-empty-desk').style.display='flex'; document.getElementById('detail-content-desk').style.display='none'; switchTab('detail'); }
+    toast('✓ Diagrama cargado y guardado');
+  } catch(e) { toast('⚠️ JSON inválido — verifica que copiaste todo el bloque'); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   UI CONTROLS
+══════════════════════════════════════════════════════════ */
+function toast(msg, dur=2800) {
+  const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), dur);
+}
+function toggleSidebar() {
+  sidebarOpen=!sidebarOpen;
+  document.getElementById('sidebar').classList.toggle('collapsed',!sidebarOpen);
+}
+function switchTab(name) {
+  const tabs=['detail','bosquejo','historial'];
+  document.querySelectorAll('.stab').forEach((t,i)=>t.classList.toggle('active',tabs[i]===name));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  if(name==='historial') renderHistorial('desk');
+}
+function closeSheet() {
+  document.getElementById('sheet-backdrop').classList.remove('open');
+  document.getElementById('sheet').classList.remove('open');
+}
+function mobileNav(page) {
+  document.querySelectorAll('.bnav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('bnav-'+page).classList.add('active');
+  if(page==='bosquejo') openPage('bosquejo');
+  else if(page==='historial'){ renderHistorial('mob'); openPage('historial'); }
+}
+function openPage(name){ document.getElementById('page-'+name).classList.add('open'); }
+function closePage(name){
+  document.getElementById('page-'+name).classList.remove('open');
+  document.querySelectorAll('.bnav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('bnav-diagrama').classList.add('active');
+}
+
+/* ══════════════════════════════════════════════════════════
+   HISTORIAL
+══════════════════════════════════════════════════════════ */
+function getHistorial(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); }catch{return[];} }
+function saveHistorial(entry){ const h=getHistorial(); h.unshift(entry); localStorage.setItem(STORAGE_KEY,JSON.stringify(h.slice(0,30))); }
+function deleteFromHistorial(id,e){
+  e.stopPropagation();
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(getHistorial().filter(x=>x.id!==id)));
+  renderHistorial(isMobile()?'mob':'desk'); toast('Borrado.');
+}
+function loadFromHistorial(entry){
+  renderDiagram(entry.data); currentHistId=entry.id;
+  if(isMobile()) closePage('historial');
+  else{ document.getElementById('detail-empty-desk').style.display='flex'; document.getElementById('detail-content-desk').style.display='none'; switchTab('detail'); }
+  renderHistorial(isMobile()?'mob':'desk');
+  toast('✓ Diagrama cargado');
+}
+function renderHistorial(ctx){
+  const list=document.getElementById(ctx==='mob'?'hist-list-mob':'hist-list-desk');
+  const hist=getHistorial();
+  if(!hist.length){ list.innerHTML='<div class="hist-empty">Aún no hay bosquejos guardados</div>'; return; }
+  list.innerHTML='';
+  hist.forEach(entry=>{
+    const item=document.createElement('div');
+    item.className='hist-item'+(entry.id===currentHistId?' loaded':'');
+    item.innerHTML=`<div class="hist-info"><div class="hist-title">${entry.title}</div><div class="hist-date">${entry.date}</div></div><button class="hist-del">×</button>`;
+    item.querySelector('.hist-del').addEventListener('click',e=>deleteFromHistorial(entry.id,e));
+    item.addEventListener('click',()=>loadFromHistorial(entry));
+    list.appendChild(item);
+  });
+}
+
+/* ── INIT ── */
+renderDiagram(DEMO);
+let resizeTimer;
+window.addEventListener('resize', ()=>{
+  clearTimeout(resizeTimer);
+  resizeTimer=setTimeout(()=>{ if(currentData) renderDiagram(currentData); },150);
+});
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
